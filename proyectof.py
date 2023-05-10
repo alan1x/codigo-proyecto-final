@@ -101,6 +101,47 @@ plt.show()
 
 
 
+images = []
+
+for i in range(nt):
+    fig = plt.figure(figsize=(12, 6))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+    ax.set_extent([joplin_lon - 20, joplin_lon + 20, joplin_lat - 20, joplin_lat + 20], crs=ccrs.PlateCarree())
+
+    ax.add_feature(cfeature.BORDERS, linewidth=0.5)
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+    ax.add_feature(cfeature.STATES, linestyle=':', linewidth=0.5)
+
+    u = nc.variables['U'][i, 0, :, :]
+    v = nc.variables['V'][i, 0, :, :]
+    wind_magnitude = np.sqrt(u**2 + v**2)
+
+    cmap = plt.get_cmap('viridis')
+    norm = plt.Normalize(vmin=0, vmax=np.max(wind_magnitude))
+    cax = ax.pcolormesh(lons, lats, wind_magnitude, transform=ccrs.PlateCarree(), cmap=cmap, norm=norm)
+    cbar = fig.colorbar(cax, ax=ax, orientation='horizontal', pad=0.05)
+
+   
+    ax.streamplot(lons, lats, u, v, transform=ccrs.PlateCarree(), density=2, color='k', linewidth=0.5)
+
+    cbar.set_label('Magnitud de la velocidad del viento en superficie (m/s)')
+    ax.set_title(f'Magnitud y dirección de la velocidad del viento en superficie (MERRA-2) - 22 de mayo de 2011, {t[i]:02d}:00 UTC')
+    ax.plot(joplin_lon, joplin_lat, marker='o', markersize=5, color='red', transform=ccrs.PlateCarree())
+    ax.text(joplin_lon + 0.1, joplin_lat + 0.1, 'Joplin, Missouri', transform=ccrs.PlateCarree(), fontsize=12, color='red')
+
+    fig.canvas.draw()
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    images.append(image)
+
+    plt.close(fig)
+
+
+
+gif_path = os.path.abspath("wind_map_time_series.gif")
+imageio.mimsave('wind_map_time_series.gif', images, fps=2)
+
+webbrowser.open("file://" + gif_path)
 
 
 
